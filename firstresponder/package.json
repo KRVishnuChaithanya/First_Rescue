@@ -1,0 +1,14 @@
+{
+  "name": "firstresponder-root",
+  "version": "1.0.0",
+  "description": "Root package to run both frontend and backend concurrently",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:backend\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:backend": "firebase emulators:start --only functions",
+    "install:all": "npm install && cd client && npm install && cd ../functions && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

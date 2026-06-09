@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Syne:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-body bg-light-gray text-dark-black;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-red text-white px-4 py-2 rounded hover:bg-primary-darkRed transition-transform transform active:scale-95;
+  }
+  .btn-secondary {
+    @apply bg-white text-primary-red border border-primary-red px-4 py-2 rounded hover:bg-primary-lightRed transition-transform transform active:scale-95;
+  }
+  .card {
+    @apply bg-white border border-border rounded-md shadow-card;
+  }
+  .input-field {
+    @apply w-full bg-white border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-red;
+  }
+  .badge {
+    @apply rounded-full px-2 py-1 text-sm inline-block;
+  }
+  .badge-red {
+    @apply badge bg-primary-lightRed text-primary-red;
+  }
+  .badge-green {
+    @apply badge bg-success-light text-success-green;
+  }
+  .badge-amber {
+    @apply badge bg-warning-light text-warning-amber;
+  }
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E0DED8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #999999;
+}
