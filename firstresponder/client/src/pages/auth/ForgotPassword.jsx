@@ -87,7 +87,9 @@ export default function ForgotPassword() {
                 email: identifier,
                 passcode: newOtp
               },
-              publicKey
+              {
+                publicKey: publicKey
+              }
             );
             toast.success(`OTP sent successfully to ${identifier}!`, { duration: 5000 });
             setGeneratedOtp(newOtp);
@@ -128,7 +130,9 @@ export default function ForgotPassword() {
               email: identifier,
               passcode: newOtp
             },
-            publicKey
+            {
+              publicKey: publicKey
+            }
           );
           toast.success(`OTP sent successfully to ${identifier}!`, { duration: 5000 });
           setGeneratedOtp(newOtp);

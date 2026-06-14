@@ -98,7 +98,9 @@ export default function Register() {
               email: formData.email,
               passcode: newOtp
             },
-            publicKey
+            {
+              publicKey: publicKey
+            }
           );
           toast.success(`OTP sent successfully to ${formData.email}!`, { duration: 5000 });
           setGeneratedOtp(newOtp);
