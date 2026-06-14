@@ -38,7 +38,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
-      ..loadRequest(Uri.parse('https://rescuelink-web.vercel.app'));
+      ..loadRequest(Uri.parse('https://client-one-puce-38.vercel.app'));
   }
 
   @override
