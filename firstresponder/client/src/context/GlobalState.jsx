@@ -155,9 +155,23 @@ export const GlobalProvider = ({ children }) => {
       });
     }
 
+    // Firebase Listener for user syncing across devices
+    let unsubUsers = () => {};
+    if (db) {
+      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+        const fbUsers = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id
+        }));
+        setUsers(fbUsers);
+        saveToStorage('firstResponder_v3_users', fbUsers);
+      });
+    }
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       unsub();
+      unsubUsers();
     };
   }, []);
 
@@ -165,10 +179,24 @@ export const GlobalProvider = ({ children }) => {
     localStorage.setItem(key, JSON.stringify(data));
   };
 
-  const registerUser = (userData) => {
-    const newUsers = [...users, { ...userData, id: Date.now() }];
+  const registerUser = async (userData) => {
+    // Generate temporary local ID first
+    const localId = Date.now();
+    const newUsers = [...users, { ...userData, id: localId }];
     setUsers(newUsers);
     saveToStorage('firstResponder_v3_users', newUsers);
+
+    // Save to Firebase for persistent web sync
+    if (db) {
+      try {
+        await addDoc(collection(db, 'users'), {
+          ...userData,
+          createdAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.error("Firebase User registration error:", err);
+      }
+    }
 
     // Also update system stats for citizens
     if (userData.role === 'citizen') {
@@ -198,14 +226,27 @@ export const GlobalProvider = ({ children }) => {
     return null;
   };
 
-  const updatePassword = (email, newPassword) => {
+  const updatePassword = async (email, newPassword) => {
     const updatedUsers = users.map(u => u.email === email ? { ...u, password: newPassword } : u);
     setUsers(updatedUsers);
     saveToStorage('firstResponder_v3_users', updatedUsers);
+    
     if (currentUser?.email === email) {
       const updatedCurrent = { ...currentUser, password: newPassword };
       setCurrentUser(updatedCurrent);
       saveToStorage('firstResponder_v3_currentUser', updatedCurrent);
+    }
+
+    // Sync password change to Firebase
+    if (db) {
+      try {
+        const userToUpdate = users.find(u => u.email === email);
+        if (userToUpdate && typeof userToUpdate.id === 'string') {
+          await updateDoc(doc(db, 'users', userToUpdate.id), { password: newPassword });
+        }
+      } catch (err) {
+        console.error("Firebase Password update error:", err);
+      }
     }
   };
 
