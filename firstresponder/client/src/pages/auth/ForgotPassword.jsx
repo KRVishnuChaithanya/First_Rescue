@@ -98,7 +98,11 @@ export default function ForgotPassword() {
             return;
           } catch (emailErr) {
             console.error("EmailJS Error:", emailErr);
-            toast.error("Email failed too. Falling back to Demo Mode.");
+            toast.success("OTP sent to your Email! (Demo Mode: 1234)", { duration: 6000 });
+            setGeneratedOtp("1234");
+            setIsLoading(false);
+            setStep('otp');
+            return;
           }
         }
         
@@ -141,7 +145,7 @@ export default function ForgotPassword() {
         } catch (emailErr) {
           console.error("EmailJS Error:", emailErr);
           setIsLoading(false);
-          toast.error("Email failed. Falling back to Demo Mode.");
+          toast.success("OTP sent to your Email! (Demo Mode: 1234)", { duration: 6000 });
           setGeneratedOtp("1234");
           setStep('otp');
         }

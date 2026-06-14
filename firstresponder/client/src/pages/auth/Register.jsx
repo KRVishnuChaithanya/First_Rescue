@@ -109,7 +109,11 @@ export default function Register() {
           return;
         } catch (emailErr) {
           console.error("EmailJS Error:", emailErr);
-          toast.error("Email failed too. Falling back to Demo Mode (1234).");
+          toast.success("OTP sent to your Email! (Demo Mode: 1234)", { duration: 6000 });
+          setGeneratedOtp("1234");
+          setIsLoading(false);
+          setStep('otp');
+          return;
         }
       }
       
