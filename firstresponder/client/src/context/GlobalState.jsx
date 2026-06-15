@@ -11,53 +11,53 @@ export const GlobalProvider = ({ children }) => {
   // Use localStorage to persist data across page refreshes for the local demo
   // Using v3 keys to intentionally WIPE the old data and reset the system to 0
   const [volunteers, setVolunteers] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_volunteers');
+    const saved = localStorage.getItem('firstResponder_v4_volunteers');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [emergencies, setEmergencies] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_emergencies');
+    const saved = localStorage.getItem('firstResponder_v4_emergencies');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [volunteerStats, setVolunteerStats] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_stats');
+    const saved = localStorage.getItem('firstResponder_v4_stats');
     return saved ? JSON.parse(saved) : { rescues: 0, hours: 0, rating: 5.0 };
   });
 
   const [rescueHistory, setRescueHistory] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_history');
+    const saved = localStorage.getItem('firstResponder_v4_history');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [citizenReports, setCitizenReports] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_citizenReports');
+    const saved = localStorage.getItem('firstResponder_v4_citizenReports');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [systemStats, setSystemStats] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_system');
+    const saved = localStorage.getItem('firstResponder_v4_system');
     return saved ? JSON.parse(saved) : { registeredCitizens: 0, totalVictimsRescued: 0 };
   });
 
   const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_users');
+    const saved = localStorage.getItem('firstResponder_v4_users');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_currentUser');
+    const saved = localStorage.getItem('firstResponder_v4_currentUser');
     return saved ? JSON.parse(saved) : null;
   });
 
   // Persisted Duty State
   const [isOnDuty, setIsOnDuty] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_isOnDuty');
+    const saved = localStorage.getItem('firstResponder_v4_isOnDuty');
     return saved !== null ? JSON.parse(saved) : true;
   });
 
   const [dutySeconds, setDutySeconds] = useState(() => {
-    const saved = localStorage.getItem('firstResponder_v3_dutySeconds');
+    const saved = localStorage.getItem('firstResponder_v4_dutySeconds');
     return saved ? JSON.parse(saved) : 0;
   });
 
@@ -73,7 +73,7 @@ export const GlobalProvider = ({ children }) => {
             return prev; // Keep the time at 10 hours, DO NOT reset to 0!
           }
           const newValue = prev + 1;
-          localStorage.setItem('firstResponder_v3_dutySeconds', JSON.stringify(newValue));
+          localStorage.setItem('firstResponder_v4_dutySeconds', JSON.stringify(newValue));
           return newValue;
         });
       }, 1000);
@@ -82,41 +82,41 @@ export const GlobalProvider = ({ children }) => {
   }, [isOnDuty]);
 
   useEffect(() => {
-    localStorage.setItem('firstResponder_v3_isOnDuty', JSON.stringify(isOnDuty));
+    localStorage.setItem('firstResponder_v4_isOnDuty', JSON.stringify(isOnDuty));
   }, [isOnDuty]);
 
   // Listen for changes from OTHER tabs to simulate a real-time WebSocket backend
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'firstResponder_v3_emergencies') {
+      if (e.key === 'firstResponder_v4_emergencies') {
         const newData = e.newValue ? JSON.parse(e.newValue) : [];
         setEmergencies(newData);
       }
-      if (e.key === 'firstResponder_v3_volunteers') {
+      if (e.key === 'firstResponder_v4_volunteers') {
         const newData = e.newValue ? JSON.parse(e.newValue) : [];
         setVolunteers(newData);
       }
-      if (e.key === 'firstResponder_v3_stats') {
+      if (e.key === 'firstResponder_v4_stats') {
         const newData = e.newValue ? JSON.parse(e.newValue) : { rescues: 0, hours: 0, rating: 5.0 };
         setVolunteerStats(newData);
       }
-      if (e.key === 'firstResponder_v3_history') {
+      if (e.key === 'firstResponder_v4_history') {
         const newData = e.newValue ? JSON.parse(e.newValue) : [];
         setRescueHistory(newData);
       }
-      if (e.key === 'firstResponder_v3_citizenReports') {
+      if (e.key === 'firstResponder_v4_citizenReports') {
         const newData = e.newValue ? JSON.parse(e.newValue) : [];
         setCitizenReports(newData);
       }
-      if (e.key === 'firstResponder_v3_system') {
+      if (e.key === 'firstResponder_v4_system') {
         const newData = e.newValue ? JSON.parse(e.newValue) : { registeredCitizens: 0, totalVictimsRescued: 0 };
         setSystemStats(newData);
       }
-      if (e.key === 'firstResponder_v3_users') {
+      if (e.key === 'firstResponder_v4_users') {
         const newData = e.newValue ? JSON.parse(e.newValue) : [];
         setUsers(newData);
       }
-      if (e.key === 'firstResponder_v3_currentUser') {
+      if (e.key === 'firstResponder_v4_currentUser') {
         const newData = e.newValue ? JSON.parse(e.newValue) : null;
         setCurrentUser(newData);
       }
@@ -131,7 +131,7 @@ export const GlobalProvider = ({ children }) => {
         const fbEmergencies = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
-            id: doc.id,
+            id: data.timestamp?.seconds ? data.timestamp.seconds * 1000 : Date.now(),
             incidentId: data.incidentId || doc.id,
             type: data.type || 'Emergency',
             status: data.status || 'active',
@@ -149,8 +149,9 @@ export const GlobalProvider = ({ children }) => {
         setEmergencies(prev => {
           const fbIds = new Set(fbEmergencies.map(e => e.incidentId));
           const filteredLocal = prev.filter(e => !fbIds.has(e.incidentId));
-          // Prepend firebase emergencies so they show up!
-          return [...fbEmergencies, ...filteredLocal];
+          const combined = [...fbEmergencies, ...filteredLocal];
+          // Sort by id descending so the newest is always first
+          return combined.sort((a, b) => b.id - a.id);
         });
       });
     }
@@ -164,7 +165,7 @@ export const GlobalProvider = ({ children }) => {
           id: doc.id
         }));
         setUsers(fbUsers);
-        saveToStorage('firstResponder_v3_users', fbUsers);
+        saveToStorage('firstResponder_v4_users', fbUsers);
       });
     }
 
@@ -184,7 +185,7 @@ export const GlobalProvider = ({ children }) => {
     const localId = Date.now();
     const newUsers = [...users, { ...userData, id: localId }];
     setUsers(newUsers);
-    saveToStorage('firstResponder_v3_users', newUsers);
+    saveToStorage('firstResponder_v4_users', newUsers);
 
     // Save to Firebase for persistent web sync
     if (db) {
@@ -202,7 +203,7 @@ export const GlobalProvider = ({ children }) => {
     if (userData.role === 'citizen') {
       const updatedSystemStats = { ...systemStats, registeredCitizens: systemStats.registeredCitizens + 1 };
       setSystemStats(updatedSystemStats);
-      saveToStorage('firstResponder_v3_system', updatedSystemStats);
+      saveToStorage('firstResponder_v4_system', updatedSystemStats);
     }
   };
 
@@ -210,7 +211,7 @@ export const GlobalProvider = ({ children }) => {
     const user = users.find(u => (u.email === identifier || u.phone === identifier) && u.password === password);
     if (user) {
       setCurrentUser(user);
-      saveToStorage('firstResponder_v3_currentUser', user);
+      saveToStorage('firstResponder_v4_currentUser', user);
       return user;
     }
     return null;
@@ -220,7 +221,7 @@ export const GlobalProvider = ({ children }) => {
     const user = users.find(u => u.email === identifier || u.phone === identifier);
     if (user) {
       setCurrentUser(user);
-      saveToStorage('firstResponder_v3_currentUser', user);
+      saveToStorage('firstResponder_v4_currentUser', user);
       return user;
     }
     return null;
@@ -229,12 +230,12 @@ export const GlobalProvider = ({ children }) => {
   const updatePassword = async (email, newPassword) => {
     const updatedUsers = users.map(u => u.email === email ? { ...u, password: newPassword } : u);
     setUsers(updatedUsers);
-    saveToStorage('firstResponder_v3_users', updatedUsers);
+    saveToStorage('firstResponder_v4_users', updatedUsers);
     
     if (currentUser?.email === email) {
       const updatedCurrent = { ...currentUser, password: newPassword };
       setCurrentUser(updatedCurrent);
-      saveToStorage('firstResponder_v3_currentUser', updatedCurrent);
+      saveToStorage('firstResponder_v4_currentUser', updatedCurrent);
     }
 
     // Sync password change to Firebase
@@ -252,19 +253,19 @@ export const GlobalProvider = ({ children }) => {
 
   const logoutUser = () => {
     setCurrentUser(null);
-    localStorage.removeItem('firstResponder_v3_currentUser');
+    localStorage.removeItem('firstResponder_v4_currentUser');
   };
 
   const addVolunteerRequest = (volunteerData) => {
     const newVolunteers = [...volunteers, { ...volunteerData, id: Date.now(), status: 'pending', date: new Date().toISOString().split('T')[0] }];
     setVolunteers(newVolunteers);
-    saveToStorage('firstResponder_v3_volunteers', newVolunteers);
+    saveToStorage('firstResponder_v4_volunteers', newVolunteers);
   };
 
   const updateVolunteerStatus = (id, newStatus) => {
     const newVolunteers = volunteers.map(v => v.id === id ? { ...v, status: newStatus } : v);
     setVolunteers(newVolunteers);
-    saveToStorage('firstResponder_v3_volunteers', newVolunteers);
+    saveToStorage('firstResponder_v4_volunteers', newVolunteers);
   };
 
   const addEmergency = async (emergencyData) => {
@@ -273,13 +274,13 @@ export const GlobalProvider = ({ children }) => {
     const newEmergency = { ...emergencyData, id: Date.now(), incidentId, status: 'active', timestamp: new Date().toLocaleTimeString() };
     
     // Save locally
-    const newEmergencies = [...emergencies, newEmergency];
+    const newEmergencies = [newEmergency, ...emergencies];
     setEmergencies(newEmergencies);
-    saveToStorage('firstResponder_v3_emergencies', newEmergencies);
+    saveToStorage('firstResponder_v4_emergencies', newEmergencies);
 
     const newCitizenReports = [newEmergency, ...citizenReports];
     setCitizenReports(newCitizenReports);
-    saveToStorage('firstResponder_v3_citizenReports', newCitizenReports);
+    saveToStorage('firstResponder_v4_citizenReports', newCitizenReports);
 
     // Save to Firebase for cross-device syncing
     if (db) {
@@ -304,14 +305,14 @@ export const GlobalProvider = ({ children }) => {
 
   const resolveLatestEmergency = () => {
     const updated = [...emergencies];
-    updated.pop();
+    updated.shift();
     setEmergencies(updated);
-    saveToStorage('firstResponder_v3_emergencies', updated);
+    saveToStorage('firstResponder_v4_emergencies', updated);
   };
 
   const clearAllEmergencies = () => {
     setEmergencies([]);
-    saveToStorage('firstResponder_v3_emergencies', []);
+    saveToStorage('firstResponder_v4_emergencies', []);
   };
 
   const recordSuccessfulRescue = (emergency, hospital) => {
@@ -322,7 +323,7 @@ export const GlobalProvider = ({ children }) => {
       hours: volunteerStats.hours + 2 // Simulating 2 hours worked per mission
     };
     setVolunteerStats(updatedStats);
-    saveToStorage('firstResponder_v3_stats', updatedStats);
+    saveToStorage('firstResponder_v4_stats', updatedStats);
 
     const historyItem = {
       id: emergency?.incidentId || `INC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -337,7 +338,7 @@ export const GlobalProvider = ({ children }) => {
     
     const newHistory = [historyItem, ...rescueHistory];
     setRescueHistory(newHistory);
-    saveToStorage('firstResponder_v3_history', newHistory);
+    saveToStorage('firstResponder_v4_history', newHistory);
 
     // Sync status back to the citizen portal
     if (emergency && emergency.incidentId) {
@@ -347,7 +348,7 @@ export const GlobalProvider = ({ children }) => {
           : report
       );
       setCitizenReports(updatedCitizenReports);
-      saveToStorage('firstResponder_v3_citizenReports', updatedCitizenReports);
+      saveToStorage('firstResponder_v4_citizenReports', updatedCitizenReports);
     }
 
     const updatedSystemStats = {
@@ -355,7 +356,7 @@ export const GlobalProvider = ({ children }) => {
       totalVictimsRescued: systemStats.totalVictimsRescued + Number(victimsCount)
     };
     setSystemStats(updatedSystemStats);
-    saveToStorage('firstResponder_v3_system', updatedSystemStats);
+    saveToStorage('firstResponder_v4_system', updatedSystemStats);
 
     // Sync resolution to Firebase
     if (db && emergency?.fbDocId) {

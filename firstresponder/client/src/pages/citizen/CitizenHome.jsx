@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { AlertTriangle, MapPin, Heart, Shield, Bell, FileText, ChevronRight, Activity, Flame, Car, HelpCircle, Users } from 'lucide-react';
+import { AlertTriangle, MapPin, Heart, Shield, Bell, FileText, ChevronRight, Activity, Flame, Car, HelpCircle, Users, Phone } from 'lucide-react';
 import BottomNav from '../../components/common/BottomNav';
 import { useGlobal } from '../../context/GlobalState';
 
@@ -9,6 +9,7 @@ export default function CitizenHome() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showWizard, setShowWizard] = useState(false);
+  const [showSafetySetup, setShowSafetySetup] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [incidentData, setIncidentData] = useState({
     type: '',
@@ -153,6 +154,7 @@ export default function CitizenHome() {
             icon={<Shield className="text-warning-amber" size={28} />}
             title="Safety Setup"
             subtitle="Emergency contacts"
+            onClick={() => setShowSafetySetup(true)}
           />
           <ActionCard 
             icon={<FileText className="text-success-green" size={28} />}
@@ -312,6 +314,40 @@ export default function CitizenHome() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Safety Setup Modal */}
+      <AnimatePresence>
+        {showSafetySetup && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 bg-dark-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              style={{ maxHeight: '90vh' }}
+            >
+              <div className="bg-warning-amber p-6 text-white relative">
+                <h2 className="text-2xl font-heading font-bold flex items-center gap-2"><Shield size={28} /> Emergency Contacts</h2>
+                <p className="text-white/80 text-sm mt-1">Tap to call immediately</p>
+                <button 
+                  onClick={() => setShowSafetySetup(false)}
+                  className="absolute top-6 right-6 text-white/60 hover:text-white"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-4">
+                <EmergencyContactCard name="National Emergency Number" number="112" icon={<AlertTriangle className="text-primary-red" />} />
+                <EmergencyContactCard name="Police Control Room" number="100" icon={<Shield className="text-blue-600" />} />
+                <EmergencyContactCard name="Fire Station" number="101" icon={<Flame className="text-orange-500" />} />
+                <EmergencyContactCard name="Ambulance Helpline" number="108" icon={<Activity className="text-success-green" />} />
+                <EmergencyContactCard name="Women Helpline" number="1091" icon={<Users className="text-purple-500" />} />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -355,5 +391,22 @@ function SeverityCard({ title, desc, color, selected, onClick }) {
       </div>
       {selected && <ChevronRight />}
     </div>
+  );
+}
+
+function EmergencyContactCard({ name, number, icon }) {
+  return (
+    <a href={`tel:${number}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className="bg-white p-2 rounded-full shadow-sm">{icon}</div>
+        <div>
+          <h4 className="font-bold text-dark-black text-sm">{name}</h4>
+          <p className="text-lg font-bold text-primary-red tracking-wider mt-0.5">{number}</p>
+        </div>
+      </div>
+      <div className="bg-success-green/10 p-3 rounded-full">
+        <Phone className="text-success-green" size={20} />
+      </div>
+    </a>
   );
 }

@@ -15,7 +15,7 @@ export default function Navigation() {
 
   const { isHospitalRoute, destLat, destLng, address } = locationState;
 
-  const latestEmergency = emergencies.length > 0 ? emergencies[emergencies.length - 1] : null;
+  const latestEmergency = emergencies.length > 0 ? emergencies[0] : null;
 
   useEffect(() => {
     if (!latestEmergency && !isHospitalRoute) {

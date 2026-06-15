@@ -14,7 +14,7 @@ export default function IncomingAlert() {
   const controls = useAnimation();
   const { emergencies } = useGlobal();
 
-  const latestEmergency = emergencies.length > 0 ? emergencies[emergencies.length - 1] : null;
+  const latestEmergency = emergencies.length > 0 ? emergencies[0] : null;
 
   const handleDecline = (reason = "Declined") => {
     toast.error(`Alert ${reason}. Forwarding to the next nearby volunteer...`, { duration: 4000 });
@@ -170,7 +170,7 @@ export default function IncomingAlert() {
           </div>
           <div className="flex items-center space-x-3">
             <Clock className="text-text-tertiary" size={20} />
-            <p className="font-bold text-sm">Reported 1 minute ago</p>
+            <p className="font-bold text-sm">Reported at {latestEmergency.timestamp}</p>
           </div>
         </div>
 

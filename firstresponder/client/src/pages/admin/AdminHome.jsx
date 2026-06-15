@@ -103,7 +103,7 @@ Medical transport required."
                   setDirectoryFilter('volunteers');
                 }}
               />
-              <StatCard title="Total Victims Rescued" value={systemStats?.totalVictimsRescued || 0} subtitle="Across all regions" color="text-blue-600" bg="bg-blue-50" />
+              <StatCard title="Total Victims Rescued" value={rescueHistory ? rescueHistory.reduce((acc, curr) => acc + Number(curr.victims || 1), 0) : 0} subtitle="Across all regions" color="text-blue-600" bg="bg-blue-50" />
             </div>
 
             {/* Volunteer Approval Table */}

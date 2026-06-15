@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 export default function VolunteerHome() {
   const navigate = useNavigate();
-  const { emergencies, volunteerStats, isOnDuty, setIsOnDuty, dutySeconds, currentUser } = useGlobal();
+  const { emergencies, volunteerStats, isOnDuty, setIsOnDuty, dutySeconds, currentUser, rescueHistory } = useGlobal();
   const [previousCount, setPreviousCount] = useState(emergencies.length);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
@@ -68,7 +68,7 @@ export default function VolunteerHome() {
         <div className="grid grid-cols-3 gap-4 p-6 pt-0">
           <div className="bg-[#1e1e1e] rounded-2xl p-4 flex flex-col items-center justify-center shadow-lg border border-white/5">
             <Heart size={20} className="text-primary-red mb-2" />
-            <h3 className="text-white font-heading font-bold text-2xl">{volunteerStats?.rescues || 0}</h3>
+            <h3 className="text-white font-heading font-bold text-2xl">{rescueHistory ? rescueHistory.reduce((acc, curr) => acc + Number(curr.victims || 1), 0) : 0}</h3>
             <p className="text-gray-400 text-[10px] font-bold tracking-widest uppercase mt-1">Rescues</p>
           </div>
           

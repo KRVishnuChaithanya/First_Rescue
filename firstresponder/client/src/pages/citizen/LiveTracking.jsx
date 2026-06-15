@@ -2,20 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, MessageSquare, Shield, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useGlobal } from '../../context/GlobalState';
 
 export default function LiveTracking() {
   const navigate = useNavigate();
+  const { emergencies } = useGlobal();
+  const latestEmergency = emergencies.length > 0 ? emergencies[0] : null;
+  const targetLat = latestEmergency?.lat || 13.0489;
+  const targetLng = latestEmergency?.lng || 80.1116;
+
   const [eta, setEta] = useState(4);
   const [distance, setDistance] = useState(1.2);
+  const [volLocation, setVolLocation] = useState({ lat: targetLat + 0.015, lng: targetLng + 0.015 }); // Start slightly offset
+
+  const calculateDistance = (vLat, vLng, cLat, cLng) => {
+    const R = 6371; // Earth radius in km
+    const dLat = (cLat - vLat) * Math.PI / 180;
+    const dLon = (cLng - vLng) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(vLat * Math.PI / 180) * Math.cos(cLat * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  useEffect(() => {
+    if (volLocation && targetLat) {
+      const dist = calculateDistance(volLocation.lat, volLocation.lng, targetLat, targetLng);
+      setDistance(Number(dist.toFixed(2)));
+      setEta(Math.max(1, Math.round(dist * 3))); // roughly 3 mins per km
+    }
+  }, [volLocation, targetLat, targetLng]);
 
   // Simulate ETA counting down as volunteer approaches
   useEffect(() => {
     const timer = setInterval(() => {
-      setEta((prev) => (prev > 1 ? prev - 1 : 1));
-      setDistance((prev) => (prev > 0.2 ? Number((prev - 0.2).toFixed(1)) : 0.1));
+      setVolLocation((prev) => {
+        // Move slightly closer to target
+        const diffLat = targetLat - prev.lat;
+        const diffLng = targetLng - prev.lng;
+        return {
+          lat: prev.lat + diffLat * 0.1,
+          lng: prev.lng + diffLng * 0.1
+        };
+      });
     }, 10000); // Update every 10 seconds for demo
     return () => clearInterval(timer);
-  }, []);
+  }, [targetLat, targetLng]);
 
   return (
     <div className="min-h-screen bg-light-gray flex flex-col relative overflow-hidden">
@@ -33,29 +67,22 @@ export default function LiveTracking() {
 
       {/* Map Area */}
       <div className="flex-1 relative z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80" 
-          alt="Live Tracking Map" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/5"></div>
-        
-        {/* Simulated Route Path on Map */}
-        <svg className="absolute inset-0 w-full h-full" style={{ filter: 'drop-shadow(0 4px 6px rgba(59, 130, 246, 0.4))' }}>
-          <path 
-            d="M 50,500 C 100,400 200,350 250,200 C 270,100 350,150 400,50" 
-            fill="none" 
-            stroke="#3B82F6" 
-            strokeWidth="6" 
-            strokeLinecap="round" 
-            strokeDasharray="10 10"
-            className="animate-pulse"
-          />
-          {/* Volunteer Marker */}
-          <circle cx="250" cy="200" r="10" fill="#3B82F6" stroke="white" strokeWidth="3" />
-          {/* Incident Marker */}
-          <circle cx="400" cy="50" r="10" fill="#E24B4A" stroke="white" strokeWidth="3" />
-        </svg>
+        {targetLat && volLocation ? (
+          <iframe 
+            width="100%" 
+            height="100%" 
+            frameBorder="0" 
+            scrolling="no" 
+            marginHeight="0" 
+            marginWidth="0" 
+            src={`https://maps.google.com/maps?saddr=${volLocation.lat},${volLocation.lng}&daddr=${targetLat},${targetLng}&output=embed`}
+            className="absolute inset-0"
+          ></iframe>
+        ) : (
+          <div className="flex items-center justify-center h-full bg-gray-200 font-bold text-gray-500">
+            Connecting to GPS...
+          </div>
+        )}
 
         {/* Floating ETA Label */}
         <motion.div 
