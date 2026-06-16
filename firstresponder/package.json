@@ -6,6 +6,7 @@
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:backend\"",
     "dev:client": "cd client && npm run dev",
     "dev:backend": "firebase emulators:start --only functions",
+    "test": "node --test test/**/*.test.js",
     "install:all": "npm install && cd client && npm install && cd ../functions && npm install"
   },
   "devDependencies": {
