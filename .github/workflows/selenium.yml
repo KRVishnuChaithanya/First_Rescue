@@ -37,6 +37,18 @@ jobs:
         cd ../functions && npm install
 
     - name: Build Client for Testing
+      # Provide dummy Firebase config so vite build succeeds in CI.
+      # The Selenium tests only check that pages render HTML — they do not
+      # make real Firebase calls, so dummy values are safe here.
+      env:
+        VITE_FIREBASE_API_KEY: ci-demo-key
+        VITE_FIREBASE_AUTH_DOMAIN: ci-demo.firebaseapp.com
+        VITE_FIREBASE_PROJECT_ID: ci-demo-project
+        VITE_FIREBASE_STORAGE_BUCKET: ci-demo-project.appspot.com
+        VITE_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+        VITE_FIREBASE_APP_ID: "1:000000000000:web:ci-demo"
+        VITE_MEASUREMENT_ID: G-CIDEMO1234
+        VITE_FIREBASE_DATABASE_URL: https://ci-demo-project.firebaseio.com
       run: |
         cd firstresponder/client
         npm run build
@@ -47,8 +59,8 @@ jobs:
         npx vite preview --port 5173 &
         SERVER_PID=$!
 
-        # Wait for the server to be ready
-        echo "⏳ Waiting for dev server to start..."
+        # Wait for the preview server to be ready (up to 60 seconds)
+        echo "⏳ Waiting for preview server to start..."
         for i in $(seq 1 30); do
           if curl -s http://localhost:5173 > /dev/null 2>&1; then
             echo "✅ Server is ready!"
@@ -58,16 +70,18 @@ jobs:
           sleep 2
         done
 
-        # Run Selenium E2E tests
+        # Run Selenium E2E tests from the firstresponder root.
+        # NOTE: test/*.e2e.test.js — single * avoids needing 'shopt -s globstar'
+        # and correctly matches all .e2e.test.js files directly inside test/.
         cd ..
         echo "### 🧪 Selenium E2E Test Results" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
-        CI=true node --test test/**/*.e2e.test.js 2>&1 | tee selenium-report.txt
+        node --test test/*.e2e.test.js 2>&1 | tee selenium-report.txt
         TEST_EXIT=${PIPESTATUS[0]}
         cat selenium-report.txt >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-        # Stop the server
+        # Stop the preview server
         kill $SERVER_PID 2>/dev/null || true
         exit $TEST_EXIT
 
