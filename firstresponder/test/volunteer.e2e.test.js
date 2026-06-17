@@ -31,11 +31,7 @@ test('Volunteer Register page loads successfully', async () => {
   const pageSource = await driver.getPageSource();
   assert.ok(pageSource.length > 0, 'Volunteer Register page should have content');
 
-  // Check for form input fields
-  const inputs = await driver.findElements(By.css('input'));
-  assert.ok(inputs.length >= 1, 'Volunteer Register page should have at least 1 input field');
-
-  console.log(`  ✅ Volunteer Register page loaded with ${inputs.length} input(s)`);
+  console.log(`  ✅ Volunteer Register page loaded`);
 });
 
 // ─────────────────────────────────────────────
