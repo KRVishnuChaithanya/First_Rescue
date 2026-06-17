@@ -1,0 +1,79 @@
+name: Selenium E2E Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  selenium-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v5
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: 22
+        cache: 'npm'
+        cache-dependency-path: firstresponder/package-lock.json
+
+    - name: Install Google Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+
+    - name: Display Chrome Version
+      run: google-chrome --version
+
+    - name: Install Dependencies (Root, Client, and Functions)
+      run: |
+        cd firstresponder
+        npm install
+        cd client && npm install
+        cd ../functions && npm install
+
+    - name: Build Client for Testing
+      run: |
+        cd firstresponder/client
+        npm run build
+
+    - name: Start Preview Server & Run Selenium Tests
+      run: |
+        cd firstresponder/client
+        npx vite preview --port 5173 &
+        SERVER_PID=$!
+
+        # Wait for the server to be ready
+        echo "⏳ Waiting for dev server to start..."
+        for i in $(seq 1 30); do
+          if curl -s http://localhost:5173 > /dev/null 2>&1; then
+            echo "✅ Server is ready!"
+            break
+          fi
+          echo "  Attempt $i/30..."
+          sleep 2
+        done
+
+        # Run Selenium E2E tests
+        cd ..
+        echo "### 🧪 Selenium E2E Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
+        CI=true node --test test/**/*.e2e.test.js 2>&1 | tee selenium-report.txt
+        TEST_EXIT=${PIPESTATUS[0]}
+        cat selenium-report.txt >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+        # Stop the server
+        kill $SERVER_PID 2>/dev/null || true
+        exit $TEST_EXIT
+
+    - name: Upload Selenium Test Report
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: selenium-e2e-report
+        path: firstresponder/selenium-report.txt
