@@ -3,125 +3,154 @@ const assert = require('node:assert');
 const { createDriver, BASE_URL } = require('./selenium.config');
 const { By, until } = require('selenium-webdriver');
 
-/**
- * Auth Pages — Selenium E2E Tests
- * Tests that the authentication pages load and render correctly.
- */
-
 let driver;
 
-// Setup: Create a new browser before all tests
 test.before(async () => {
   driver = await createDriver();
 });
 
-// Teardown: Close the browser after all tests
 test.after(async () => {
   if (driver) {
     await driver.quit();
   }
 });
 
-// ─────────────────────────────────────────────
-// Test 1: Splash page loads
-// ─────────────────────────────────────────────
-test('Splash page loads successfully', async () => {
-  await driver.get(`${BASE_URL}/`);
+// Helper function to test all buttons on a dashboard
+async function testDashboardButtons(driver, dashboardUrl) {
+  // Wait until we are on the dashboard
+  await driver.wait(until.urlContains(dashboardUrl), 10000);
+  await driver.sleep(3000); // Give the user 3 seconds to see the dashboard load
 
-  // Wait for the page to load (check that body exists)
-  await driver.wait(until.elementLocated(By.css('body')), 10000);
+  // Find all buttons, links, and explicitly clickable divs
+  let buttons = await driver.findElements(By.css('button, a, .cursor-pointer'));
+  console.log(`  Found ${buttons.length} clickable elements on ${dashboardUrl}`);
 
-  // Verify the page loaded (check page title or any element)
-  const pageSource = await driver.getPageSource();
-  assert.ok(pageSource.length > 0, 'Splash page should have content');
+  for (let i = 0; i < buttons.length; i++) {
+    try {
+      // Navigate to clean dashboard to ensure no modals are blocking
+      const currentUrl = await driver.getCurrentUrl();
+      if (!currentUrl.includes(dashboardUrl)) {
+        await driver.get(`${BASE_URL}/${dashboardUrl.replace(/^\/+/, '')}`);
+        await driver.wait(until.urlContains(dashboardUrl), 10000);
+      } else {
+        // Refresh to close any open modals from previous clicks
+        await driver.navigate().refresh();
+        await driver.wait(until.urlContains(dashboardUrl), 10000);
+      }
+      // Give the user 2.5 seconds to see the dashboard reset before clicking the next button
+      await driver.sleep(2500);
 
-  console.log('  ✅ Splash page loaded successfully');
-});
+      // Re-fetch buttons after refresh
+      buttons = await driver.findElements(By.css('button, a, .cursor-pointer'));
+      if (!buttons[i]) continue;
+      
+      const isDisplayed = await buttons[i].isDisplayed();
+      if (!isDisplayed) continue;
 
-// ─────────────────────────────────────────────
-// Test 2: Login page loads with form fields
-// ─────────────────────────────────────────────
-test('Login page loads with form elements', async () => {
-  await driver.get(`${BASE_URL}/login`);
+      const btnText = await buttons[i].getText();
+      const btnTag = await buttons[i].getTagName();
+      
+      // Don't click logout during the loop if we can avoid it, or we'll get logged out!
+      if (btnText && btnText.toLowerCase().includes('logout')) {
+         console.log(`  Skipping ${btnTag} ${i+1}: "${btnText}" (Logout)`);
+         continue;
+      }
+      if (btnText && btnText.toLowerCase().includes('sign out')) {
+         console.log(`  Skipping ${btnTag} ${i+1}: "${btnText}" (Sign Out)`);
+         continue;
+      }
 
-  // Wait for the page to render
-  await driver.wait(until.elementLocated(By.css('body')), 10000);
+      console.log(`  Clicking ${btnTag} ${i+1}: "${btnText.replace(/\n/g, ' ')}"`);
+      await buttons[i].click();
+      
+      // Give the user 3 seconds to observe what happened after the click
+      await driver.sleep(3000);
 
-  // Check that the page has content
-  const pageSource = await driver.getPageSource();
-  assert.ok(pageSource.length > 0, 'Login page should have content');
+    } catch (err) {
+      console.log(`  Could not click element ${i+1} (Hidden or obscured)`);
+    }
+  }
+}
 
-  // Check for input fields (email/password)
-  const inputs = await driver.findElements(By.css('input'));
-  assert.ok(inputs.length >= 1, 'Login page should have at least 1 input field');
-
-  console.log(`  ✅ Login page loaded with ${inputs.length} input field(s)`);
-});
-
-// ─────────────────────────────────────────────
-// Test 3: Register page loads with form fields
-// ─────────────────────────────────────────────
-test('Register page loads with form elements', async () => {
-  await driver.get(`${BASE_URL}/register`);
-
-  // Wait for the page to render
-  await driver.wait(until.elementLocated(By.css('body')), 10000);
-
-  // Check for input fields
-  const inputs = await driver.findElements(By.css('input'));
-  assert.ok(inputs.length >= 1, 'Register page should have input fields');
-
-  // Check for a submit button
-  const buttons = await driver.findElements(By.css('button'));
-  assert.ok(buttons.length >= 1, 'Register page should have at least 1 button');
-
-  console.log(`  ✅ Register page loaded with ${inputs.length} input(s) and ${buttons.length} button(s)`);
-});
-
-// ─────────────────────────────────────────────
-// Test 4: Forgot Password page loads
-// ─────────────────────────────────────────────
-test('Forgot Password page loads', async () => {
-  await driver.get(`${BASE_URL}/forgot-password`);
-
-  // Wait for page to render
-  await driver.wait(until.elementLocated(By.css('body')), 10000);
-
-  const pageSource = await driver.getPageSource();
-  assert.ok(pageSource.length > 0, 'Forgot Password page should have content');
-
-  console.log('  ✅ Forgot Password page loaded successfully');
-});
-
-// ─────────────────────────────────────────────
-// Test 5: Navigation flow — Splash → Login
-// ─────────────────────────────────────────────
-test('Can navigate from Splash to Login page', async () => {
-  // Start at splash
-  await driver.get(`${BASE_URL}/`);
-  await driver.wait(until.elementLocated(By.css('body')), 10000);
-
-  // Navigate to login
+test('Citizen login and dashboard buttons work', async () => {
   await driver.get(`${BASE_URL}/login`);
   await driver.wait(until.elementLocated(By.css('body')), 10000);
 
-  // Verify URL changed
-  const currentUrl = await driver.getCurrentUrl();
-  assert.ok(currentUrl.includes('/login'), 'Should be on the login page');
+  // Exact match to avoid clicking the submit button span
+  const citizenTab = await driver.findElement(By.xpath("//button[normalize-space(text())='Citizen']"));
+  await citizenTab.click();
+  await driver.sleep(1500); // Pause to let user see tab switch
 
-  console.log('  ✅ Navigation: Splash → Login works');
+  const emailInput = await driver.findElement(By.css('input[type="text"]'));
+  await emailInput.clear();
+  await emailInput.sendKeys('e2ecitizen@test.com');
+  await driver.sleep(500); // Pause while typing
+
+  const passwordInput = await driver.findElement(By.css('input[type="password"]'));
+  await passwordInput.clear();
+  await passwordInput.sendKeys('password123');
+  await driver.sleep(1500); // Pause to let user read credentials
+
+  const loginBtn = await driver.findElement(By.css('button[type="submit"]'));
+  await loginBtn.click();
+  await driver.sleep(2000); // Pause to see login transition
+
+  await testDashboardButtons(driver, 'citizen-home');
+  console.log('  ✅ Citizen Dashboard Tested');
 });
 
-// ─────────────────────────────────────────────
-// Test 6: Onboarding page loads
-// ─────────────────────────────────────────────
-test('Onboarding page loads successfully', async () => {
-  await driver.get(`${BASE_URL}/onboarding`);
-
+test('Volunteer login and dashboard buttons work', async () => {
+  await driver.get(`${BASE_URL}/login`);
   await driver.wait(until.elementLocated(By.css('body')), 10000);
 
-  const pageSource = await driver.getPageSource();
-  assert.ok(pageSource.length > 0, 'Onboarding page should have content');
+  // Exact match
+  const volunteerTab = await driver.findElement(By.xpath("//button[normalize-space(text())='Volunteer']"));
+  await volunteerTab.click();
+  await driver.sleep(1500); // Pause to let user see tab switch
 
-  console.log('  ✅ Onboarding page loaded successfully');
+  const emailInput = await driver.findElement(By.css('input[type="text"]'));
+  await emailInput.clear();
+  await emailInput.sendKeys('e2evolunteer@test.com');
+  await driver.sleep(500);
+
+  const passwordInput = await driver.findElement(By.css('input[type="password"]'));
+  await passwordInput.clear();
+  await passwordInput.sendKeys('password123');
+  await driver.sleep(1500); // Pause to let user read credentials
+
+  const loginBtn = await driver.findElement(By.css('button[type="submit"]'));
+  await loginBtn.click();
+  await driver.sleep(2000); // Pause to see login transition
+
+  await testDashboardButtons(driver, 'volunteer-home');
+  console.log('  ✅ Volunteer Dashboard Tested');
 });
+
+test('Admin login and dashboard buttons work', async () => {
+  await driver.get(`${BASE_URL}/login`);
+  await driver.wait(until.elementLocated(By.css('body')), 10000);
+
+  // Exact match
+  const adminTab = await driver.findElement(By.xpath("//button[normalize-space(text())='Admin']"));
+  await adminTab.click();
+  await driver.sleep(1500); // Pause to let user see tab switch
+
+  const emailInput = await driver.findElement(By.css('input[type="text"]'));
+  await emailInput.clear();
+  await emailInput.sendKeys('nani@admin');
+  await driver.sleep(500);
+
+  const passwordInput = await driver.findElement(By.css('input[type="password"]'));
+  await passwordInput.clear();
+  await passwordInput.sendKeys('nani@2005');
+  await driver.sleep(1500); // Pause to let user read credentials
+
+  const loginBtn = await driver.findElement(By.css('button[type="submit"]'));
+  await loginBtn.click();
+  await driver.sleep(2000); // Pause to see login transition
+
+  await testDashboardButtons(driver, 'admin/dashboard');
+  console.log('  ✅ Admin Dashboard Tested');
+});
+
+

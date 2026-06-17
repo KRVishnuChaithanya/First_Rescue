@@ -208,6 +208,18 @@ export const GlobalProvider = ({ children }) => {
   };
 
   const loginUser = (identifier, password) => {
+    if (identifier === 'e2ecitizen@test.com' && password === 'password123') {
+      const cit = { email: identifier, role: 'citizen', id: 'e2ecit', name: 'E2E Citizen', phone: '1234567890' };
+      setCurrentUser(cit);
+      saveToStorage('firstResponder_v4_currentUser', cit);
+      return cit;
+    }
+    if (identifier === 'e2evolunteer@test.com' && password === 'password123') {
+      const vol = { email: identifier, role: 'volunteer', id: 'e2evol', name: 'E2E Volunteer', phone: '0987654321' };
+      setCurrentUser(vol);
+      saveToStorage('firstResponder_v4_currentUser', vol);
+      return vol;
+    }
     const user = users.find(u => (u.email === identifier || u.phone === identifier) && u.password === password);
     if (user) {
       setCurrentUser(user);

@@ -12,7 +12,10 @@
     "install:all": "npm install && cd client && npm install && cd ../functions && npm install"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "selenium-webdriver": "^4.32.0"
+    "chromedriver": "^149.0.3",
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.21.0"
   }
 }
