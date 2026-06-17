@@ -94,21 +94,24 @@ test('Citizen History page loads successfully', async () => {
 // Test 6: Multiple citizen pages navigation
 // ─────────────────────────────────────────────
 test('Can navigate between citizen pages', async () => {
-  // Visit citizen home
+  // Visit citizen home — wait for React Router to settle on the URL
   await driver.get(`${BASE_URL}/citizen-home`);
   await driver.wait(until.elementLocated(By.css('body')), 10000);
+  await driver.wait(until.urlContains('/citizen-home'), 5000);
   let url = await driver.getCurrentUrl();
   assert.ok(url.includes('/citizen-home'), 'Should be on citizen home');
 
   // Navigate to hospitals
   await driver.get(`${BASE_URL}/hospitals`);
   await driver.wait(until.elementLocated(By.css('body')), 10000);
+  await driver.wait(until.urlContains('/hospitals'), 5000);
   url = await driver.getCurrentUrl();
   assert.ok(url.includes('/hospitals'), 'Should be on hospitals page');
 
   // Navigate to first aid
   await driver.get(`${BASE_URL}/first-aid`);
   await driver.wait(until.elementLocated(By.css('body')), 10000);
+  await driver.wait(until.urlContains('/first-aid'), 5000);
   url = await driver.getCurrentUrl();
   assert.ok(url.includes('/first-aid'), 'Should be on first aid page');
 

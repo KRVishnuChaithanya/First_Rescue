@@ -73,10 +73,13 @@ jobs:
         # Run Selenium E2E tests from the firstresponder root.
         # NOTE: test/*.e2e.test.js — single * avoids needing 'shopt -s globstar'
         # and correctly matches all .e2e.test.js files directly inside test/.
+        # NOTE: --test-concurrency=1 is CRITICAL — without it Node.js 22 runs
+        # all 4 test files in parallel, launching 4 Chrome instances at once on
+        # a 2-core CI machine, causing random crashes and 1 test to fail.
         cd ..
         echo "### 🧪 Selenium E2E Test Results" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
-        node --test test/*.e2e.test.js 2>&1 | tee selenium-report.txt
+        node --test --test-concurrency=1 test/*.e2e.test.js 2>&1 | tee selenium-report.txt
         TEST_EXIT=${PIPESTATUS[0]}
         cat selenium-report.txt >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
