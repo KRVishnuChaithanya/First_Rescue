@@ -50,10 +50,6 @@ export const GlobalProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const saveToStorage = (key, data) => {
-    localStorage.setItem(key, JSON.stringify(data));
-  };
-
   // Persisted Duty State
   const [isOnDuty, setIsOnDuty] = useState(() => {
     const saved = localStorage.getItem('firstResponder_v4_isOnDuty');
@@ -179,6 +175,10 @@ export const GlobalProvider = ({ children }) => {
       unsubUsers();
     };
   }, []);
+
+  const saveToStorage = (key, data) => {
+    localStorage.setItem(key, JSON.stringify(data));
+  };
 
   const registerUser = async (userData) => {
     // Generate temporary local ID first
