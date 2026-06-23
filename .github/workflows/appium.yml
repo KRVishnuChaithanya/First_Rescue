@@ -9,9 +9,8 @@ on:
 
 jobs:
   appium-mobile:
-    # Android emulator needs hardware acceleration, which works best on macOS runners in GitHub Actions
-    # Use macos-13 (Intel) because macos-latest (M1/Apple Silicon) cannot run x86 emulator images
-    runs-on: macos-13
+    # Use ubuntu-latest. Hardware acceleration (KVM) is supported natively.
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
