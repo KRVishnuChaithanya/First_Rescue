@@ -78,11 +78,9 @@ jobs:
         # a 2-core CI machine, causing random crashes and 1 test to fail.
         cd ..
         echo "### 🧪 Selenium E2E Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
         node --test --test-concurrency=1 --test-reporter=./test/pytest-reporter.js test/*.e2e.test.js 2>&1 | tee selenium-report.txt
         TEST_EXIT=${PIPESTATUS[0]}
-        cat selenium-report.txt >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        cat test-summary.md >> $GITHUB_STEP_SUMMARY
 
         # Stop the preview server
         kill $SERVER_PID 2>/dev/null || true
