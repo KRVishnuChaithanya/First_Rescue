@@ -1,0 +1,78 @@
+name: Load Testing
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+        cache: 'npm'
+        cache-dependency-path: firstresponder/package-lock.json
+
+    - name: Install Dependencies
+      run: |
+        cd firstresponder
+        npm install
+        cd client && npm install
+
+    - name: Build Client for Testing
+      env:
+        VITE_FIREBASE_API_KEY: ci-demo-key
+        VITE_FIREBASE_AUTH_DOMAIN: ci-demo.firebaseapp.com
+        VITE_FIREBASE_PROJECT_ID: ci-demo-project
+        VITE_FIREBASE_STORAGE_BUCKET: ci-demo-project.appspot.com
+        VITE_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+        VITE_FIREBASE_APP_ID: "1:000000000000:web:ci-demo"
+        VITE_MEASUREMENT_ID: G-CIDEMO1234
+        VITE_FIREBASE_DATABASE_URL: https://ci-demo-project.firebaseio.com
+      run: |
+        cd firstresponder/client
+        npm run build
+
+    - name: Start Preview Server & Run Load Tests
+      run: |
+        cd firstresponder/client
+        npx vite preview --port 5173 &
+        SERVER_PID=$!
+
+        echo "⏳ Waiting for preview server to start..."
+        for i in $(seq 1 30); do
+          if curl -s http://localhost:5173 > /dev/null 2>&1; then
+            echo "✅ Server is ready!"
+            break
+          fi
+          echo "  Attempt $i/30..."
+          sleep 2
+        done
+
+        cd ../
+        echo "### 🚀 Automated Load Testing Results" >> $GITHUB_STEP_SUMMARY
+        npm run test:load
+        TEST_EXIT=$?
+        
+        # Append the beautifully formatted markdown report to the GitHub Step Summary
+        cat load-report.md >> $GITHUB_STEP_SUMMARY
+
+        kill $SERVER_PID 2>/dev/null || true
+        exit $TEST_EXIT
+
+    - name: Upload Load Test Artifacts
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: load-test-reports
+        path: |
+          firstresponder/load-report.json
+          firstresponder/load-report.md
