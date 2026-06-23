@@ -1,0 +1,95 @@
+name: Appium Mobile Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  appium-mobile:
+    # Android emulator needs hardware acceleration, which works best on macOS runners in GitHub Actions
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+        cache: 'npm'
+        cache-dependency-path: firstresponder/package-lock.json
+
+    - name: Install Appium and UiAutomator2
+      run: |
+        npm install -g appium
+        appium driver install uiautomator2
+
+    - name: Install Dependencies (Root, Client, and Functions)
+      run: |
+        cd firstresponder
+        npm install --loglevel=error --no-audit --no-fund
+        cd client && npm install --loglevel=error --no-audit --no-fund
+        cd ../functions && npm install --loglevel=error --no-audit --no-fund
+
+    - name: Build Client for Testing
+      env:
+        VITE_FIREBASE_API_KEY: ci-demo-key
+        VITE_FIREBASE_AUTH_DOMAIN: ci-demo.firebaseapp.com
+        VITE_FIREBASE_PROJECT_ID: ci-demo-project
+        VITE_FIREBASE_STORAGE_BUCKET: ci-demo-project.appspot.com
+        VITE_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+        VITE_FIREBASE_APP_ID: "1:000000000000:web:ci-demo"
+        VITE_MEASUREMENT_ID: G-CIDEMO1234
+        VITE_FIREBASE_DATABASE_URL: https://ci-demo-project.firebaseio.com
+      run: |
+        cd firstresponder/client
+        npm run build
+
+    - name: Start Appium and Preview Server
+      run: |
+        # Start Appium Server in the background
+        appium &
+        
+        # Start Vite preview server in the background
+        cd firstresponder/client
+        npx vite preview --port 5173 --host 0.0.0.0 &
+        SERVER_PID=$!
+        
+        # Wait for the preview server to be ready
+        echo "⏳ Waiting for preview server..."
+        for i in $(seq 1 30); do
+          if curl -s http://127.0.0.1:5173 > /dev/null 2>&1; then
+            echo "✅ Server is ready!"
+            break
+          fi
+          sleep 2
+        done
+
+    - name: Run Appium Tests in Android Emulator
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 29
+        target: default
+        arch: x86
+        profile: pixel_4
+        script: |
+          cd firstresponder
+          echo "### 📱 Appium Mobile Test Results" >> $GITHUB_STEP_SUMMARY
+          
+          # We use node to run the test and output to summary
+          node --test test/appium.*.test.js 2>&1 | tee appium-report.txt
+          
+          # Check if the test summary markdown exists and append it (if using a custom reporter)
+          if [ -f test-summary.md ]; then
+            cat test-summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+    - name: Upload Appium Test Report
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: appium-mobile-report
+        path: firstresponder/appium-report.txt
