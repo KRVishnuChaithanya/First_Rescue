@@ -48,11 +48,33 @@ module.exports = async function* customReporter(source) {
   
   // Endpoint Breakdown (Table format requested by user)
   md += `**Test Breakdown**\n\n`;
-  md += `| Test File | Test Case | Status | Duration |\n`;
-  md += `|-----------|-----------|--------|----------|\n`;
+  md += `| Test File | Key | Test Case | Status | Duration |\n`;
+  md += `|-----------|-----|-----------|--------|----------|\n`;
   for (const t of tests) {
     const emoji = t.status === 'PASSED' ? '✅' : '❌';
-    md += `| \`${t.file}\` | ${t.name} | ${emoji} ${t.status} | ${t.duration.toFixed(1)} ms |\n`;
+    
+    // Extract a "key" from the test name based on user's request
+    let key = "General";
+    const lowerName = t.name.toLowerCase();
+    if (lowerName.includes('login')) key = 'Login';
+    else if (lowerName.includes('register')) key = 'Registration';
+    else if (lowerName.includes('report') || lowerName.includes('incident')) key = 'Incident Reporting';
+    else if (lowerName.includes('hospital')) key = 'Hospital Search';
+    else if (lowerName.includes('first-aid') || lowerName.includes('cpr')) key = 'First-Aid';
+    else if (lowerName.includes('sos') || lowerName.includes('alert')) key = 'SOS/Alert';
+    else if (lowerName.includes('navigation') || lowerName.includes('route')) key = 'Navigation';
+    else if (lowerName.includes('admin') || lowerName.includes('dashboard')) key = 'Admin Dashboard';
+    else if (lowerName.includes('profile')) key = 'Profile';
+    else if (lowerName.includes('session') || lowerName.includes('auth')) key = 'Authentication';
+    else if (lowerName.includes('volunteer')) key = 'Volunteer Module';
+    else if (lowerName.includes('citizen')) key = 'Citizen Module';
+    else {
+      // Fallback: take the first word as the key
+      const firstWord = t.name.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '');
+      key = firstWord || "General";
+    }
+
+    md += `| \`${t.file}\` | **${key}** | ${t.name} | ${emoji} ${t.status} | ${t.duration.toFixed(1)} ms |\n`;
   }
   
   md += `\n💡 **Interpretation**\n`;

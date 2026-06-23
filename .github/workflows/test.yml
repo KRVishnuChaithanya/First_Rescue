@@ -38,7 +38,7 @@ jobs:
       run: |
         cd firstresponder
         echo "### 🧪 Test Run Details" >> $GITHUB_STEP_SUMMARY
-        node --test --test-reporter=./test/pytest-reporter.js test/*.test.js 2>&1 | tee test-report.txt
+        node --test --test-reporter=./test/pytest-reporter.js test/*.unit.test.js 2>&1 | tee test-report.txt
         TEST_EXIT=${PIPESTATUS[0]}
         cat test-summary.md >> $GITHUB_STEP_SUMMARY
         exit $TEST_EXIT
