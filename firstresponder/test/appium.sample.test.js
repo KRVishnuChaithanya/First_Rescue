@@ -1,29 +1,25 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { Builder, By, until } = require('selenium-webdriver');
-const chrome = require('selenium-webdriver/chrome');
 
-// Use localhost since we are using Chrome Mobile Emulation directly on the host machine
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+// Assuming you are running Vite on localhost:5173 
+// You must use 10.0.2.2 instead of localhost to access your laptop's localhost from the Android Emulator!
+const BASE_URL = 'http://10.0.2.2:5173';
 
 let driver;
 
 test.before(async () => {
-  const options = new chrome.Options();
-  options.setMobileEmulation({ deviceName: 'iPhone X' });
-  
-  if (process.env.CI) {
-    options.addArguments('--headless=new');
-    options.addArguments('--no-sandbox');
-    options.addArguments('--disable-dev-shm-usage');
-  } else {
-    options.setChromeBinaryPath('C:/Program Files/Google/Chrome/Application/chrome.exe');
-    options.addArguments('--headless=new'); // Headless to avoid popups, remove if you want to see it
-  }
-
+  // Connect to the local Appium server
   driver = await new Builder()
-    .forBrowser('chrome')
-    .setChromeOptions(options)
+    .usingServer('http://127.0.0.1:4723/') // Appium Server URL
+    .withCapabilities({
+      "platformName": "Android",
+      "appium:automationName": "UiAutomator2",
+      "browserName": "Browser", // generic AOSP browser (Chrome is not in default CI emulators)
+      "appium:deviceName": "Android Emulator",
+      // Optional: Add specific device UDID if needed
+      // "appium:udid": "emulator-5554" 
+    })
     .build();
 });
 
