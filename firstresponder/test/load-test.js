@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 
 const TARGET_URL = 'http://localhost:5173/';
-const DURATION_SEC = 15;
+const DURATION_SEC = 100;
 const PRE_WARM_SEC = 15;
 const CONCURRENCY = 100;
 

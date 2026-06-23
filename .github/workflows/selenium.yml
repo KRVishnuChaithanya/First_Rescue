@@ -32,9 +32,9 @@ jobs:
     - name: Install Dependencies (Root, Client, and Functions)
       run: |
         cd firstresponder
-        npm install
-        cd client && npm install
-        cd ../functions && npm install
+        npm install --loglevel=error --no-audit --no-fund
+        cd client && npm install --loglevel=error --no-audit --no-fund
+        cd ../functions && npm install --loglevel=error --no-audit --no-fund
 
     - name: Build Client for Testing
       # Provide dummy Firebase config so vite build succeeds in CI.

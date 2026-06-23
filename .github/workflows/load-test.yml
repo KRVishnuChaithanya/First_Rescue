@@ -24,8 +24,8 @@ jobs:
     - name: Install Dependencies
       run: |
         cd firstresponder
-        npm install
-        cd client && npm install
+        npm install --loglevel=error --no-audit --no-fund
+        cd client && npm install --loglevel=error --no-audit --no-fund
 
     - name: Build Client for Testing
       env:
