@@ -10,7 +10,8 @@ on:
 jobs:
   appium-mobile:
     # Android emulator needs hardware acceleration, which works best on macOS runners in GitHub Actions
-    runs-on: macos-latest
+    # Use macos-13 (Intel) because macos-latest (M1/Apple Silicon) cannot run x86 emulator images
+    runs-on: macos-13
 
     steps:
     - name: Checkout Repository
