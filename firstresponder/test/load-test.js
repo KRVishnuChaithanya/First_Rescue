@@ -157,27 +157,29 @@ function finishTest() {
   console.log(`Error Rate: ${finalErr}%\n`);
   
   // Print Per-Endpoint Breakdown (console)
-  console.log('--- Per-Endpoint Breakdown ---');
-  console.log('Endpoint'.padEnd(20) + 'Reqs'.padStart(8) + 'Avg(ms)'.padStart(10) + 'P95(ms)'.padStart(10) + 'Err%'.padStart(8));
-  console.log('--------------------------------------------------------');
+  console.log('ENDPOINT BREAKDOWN');
+  console.log('Endpoint Name'.padEnd(30) + '| Requests | Avg Time   | p95 Time   | Error Rate');
+  console.log('--------------------------------------------------------------------------------');
   
   let mdTableRows = '';
   for (const stat of stats) {
     const epReqs = stat.requests;
-    const epAvg = epReqs > 0 ? (stat.responseTimes.reduce((a, b) => a + b, 0) / epReqs).toFixed(0) : 0;
+    const epAvg = epReqs > 0 ? (stat.responseTimes.reduce((a, b) => a + b, 0) / epReqs).toFixed(1) : "0.0";
     const epSorted = stat.responseTimes.sort((a, b) => a - b);
     const epP95 = epReqs > 0 ? epSorted[Math.floor(epSorted.length * 0.95)] : 0;
-    const epErr = epReqs > 0 ? ((stat.errors / epReqs) * 100).toFixed(2) + '%' : '0.00%';
+    const epErr = epReqs > 0 ? ((stat.errors / epReqs) * 100).toFixed(1) + '%' : '0.0%';
+    
+    const endpointName = `${stat.name} (${stat.path})`;
     
     console.log(
-      stat.name.padEnd(20) + 
-      epReqs.toString().padStart(8) + 
-      epAvg.toString().padStart(10) + 
-      epP95.toString().padStart(10) + 
-      epErr.padStart(8)
+      endpointName.padEnd(30) + '| ' +
+      epReqs.toString().padEnd(9) + '| ' +
+      `${epAvg} ms`.padEnd(11) + '| ' +
+      `${epP95.toFixed(1)} ms`.padEnd(11) + '| ' +
+      epErr
     );
     
-    mdTableRows += `| ${stat.name} | ${epReqs} | ${epAvg} | ${epP95} | ${epErr} |\n`;
+    mdTableRows += `| ${endpointName} | ${epReqs} | ${epAvg} ms | ${epP95.toFixed(1)} ms | ${epErr} |\n`;
   }
   
   // Generate Markdown summary for GitHub Actions
