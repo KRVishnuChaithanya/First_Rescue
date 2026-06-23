@@ -109,11 +109,26 @@ async function runLoadTest() {
   const interval = setInterval(() => {
     elapsed++;
     const left = DURATION_SEC - elapsed;
+    
+    // Log per-endpoint stats
+    stats.forEach(stat => {
+      stat.lastIntervalReqs = stat.lastIntervalReqs || 0;
+      const epReqsThisInterval = stat.requests - stat.lastIntervalReqs;
+      const epRps = epReqsThisInterval.toFixed(1);
+      const epErrRate = stat.requests > 0 ? ((stat.errors / stat.requests) * 100).toFixed(1) : "0.0";
+      
+      console.log(`[${stat.name}] ${elapsed}s elapsed | ${left}s left | ${stat.requests} reqs | ${epRps} RPS | ${epErrRate}% errors`);
+      
+      stat.lastIntervalReqs = stat.requests;
+    });
+
+    // Log total stats
     const reqsThisInterval = totalRequests - lastIntervalReqs;
     const rps = reqsThisInterval.toFixed(1);
     const errRate = totalRequests > 0 ? ((totalErrors / totalRequests) * 100).toFixed(1) : "0.0";
     
-    console.log(`${elapsed}s elapsed | ${left}s left | ${totalRequests} reqs | ${rps} RPS | ${errRate}% errors`);
+    console.log(`[TOTAL] ${elapsed}s elapsed | ${left}s left | ${totalRequests} reqs | ${rps} RPS | ${errRate}% errors`);
+    console.log('-'.repeat(50));
     
     lastIntervalReqs = totalRequests;
     
