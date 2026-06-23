@@ -62,7 +62,6 @@ jobs:
         npm run test:load
         TEST_EXIT=$?
         
-        # Append the beautifully formatted markdown report to the GitHub Step Summary
         cat load-report.md >> $GITHUB_STEP_SUMMARY
 
         kill $SERVER_PID 2>/dev/null || true
@@ -74,5 +73,5 @@ jobs:
       with:
         name: load-test-reports
         path: |
-          firstresponder/load-report.json
+          firstresponder/load_report.csv
           firstresponder/load-report.md

@@ -8,7 +8,7 @@
     "dev:backend": "firebase emulators:start --only functions",
     "test": "node --test --test-reporter=./test/pytest-reporter.js test/*.test.js",
     "test:e2e": "node --test --test-reporter=./test/pytest-reporter.js test/*.e2e.test.js",
-    "test:load": "npx artillery run --output load-report.json test/load.yml && node test/parse-load-results.js",
+    "test:load": "node test/load-test.js",
     "test:all": "npm run test && npm run test:e2e && npm run test:load",
     "install:all": "npm install && cd client && npm install && cd ../functions && npm install"
   },
