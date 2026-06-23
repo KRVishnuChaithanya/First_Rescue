@@ -61,6 +61,10 @@ export const GlobalProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : 0;
   });
 
+  const saveToStorage = (key, data) => {
+    localStorage.setItem(key, JSON.stringify(data));
+  };
+
   // Background Duty Timer
   useEffect(() => {
     let interval;
@@ -175,10 +179,6 @@ export const GlobalProvider = ({ children }) => {
       unsubUsers();
     };
   }, []);
-
-  const saveToStorage = (key, data) => {
-    localStorage.setItem(key, JSON.stringify(data));
-  };
 
   const registerUser = async (userData) => {
     // Generate temporary local ID first

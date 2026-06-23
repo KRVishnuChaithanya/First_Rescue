@@ -39,7 +39,7 @@ jobs:
         cd firstresponder
         echo "### 🧪 Test Run Details" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
-        node --test test/sample.test.js 2>&1 | tee test-report.txt
+        node --test --test-reporter=./test/pytest-reporter.js test/sample.test.js 2>&1 | tee test-report.txt
         TEST_EXIT=${PIPESTATUS[0]}
         cat test-report.txt >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

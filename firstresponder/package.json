@@ -6,8 +6,8 @@
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:backend\"",
     "dev:client": "cd client && npm run dev",
     "dev:backend": "firebase emulators:start --only functions",
-    "test": "node --test test/*.test.js",
-    "test:e2e": "node --test test/*.e2e.test.js",
+    "test": "node --test --test-reporter=./test/pytest-reporter.js test/*.test.js",
+    "test:e2e": "node --test --test-reporter=./test/pytest-reporter.js test/*.e2e.test.js",
     "test:all": "npm run test && npm run test:e2e",
     "install:all": "npm install && cd client && npm install && cd ../functions && npm install"
   },

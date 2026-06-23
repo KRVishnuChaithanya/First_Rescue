@@ -79,7 +79,7 @@ jobs:
         cd ..
         echo "### 🧪 Selenium E2E Test Results" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
-        node --test --test-concurrency=1 test/*.e2e.test.js 2>&1 | tee selenium-report.txt
+        node --test --test-concurrency=1 --test-reporter=./test/pytest-reporter.js test/*.e2e.test.js 2>&1 | tee selenium-report.txt
         TEST_EXIT=${PIPESTATUS[0]}
         cat selenium-report.txt >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
