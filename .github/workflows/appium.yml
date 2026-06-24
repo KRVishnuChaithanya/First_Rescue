@@ -8,14 +8,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  appium-mobile:
-    # Use ubuntu-latest. Hardware acceleration (KVM) is supported natively.
+  appium-android:
+    name: 📱 Appium Android Tests
+    # ubuntu-latest supports KVM hardware acceleration for Android emulator
     runs-on: ubuntu-latest
 
     steps:
+    # ── 1. Checkout ──────────────────────────────────────────────────────────
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    # ── 2. Enable KVM hardware acceleration (required for Android emulator) ──
+    - name: Enable KVM Hardware Acceleration
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+          | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+        sudo apt-get install -y cpu-checker
+        kvm-ok || echo "KVM not available — emulator will use software rendering"
+
+    # ── 3. Java (required by Android SDK / emulator) ─────────────────────────
+    - name: Setup Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    # ── 4. Node.js ───────────────────────────────────────────────────────────
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -23,18 +43,22 @@ jobs:
         cache: 'npm'
         cache-dependency-path: firstresponder/package-lock.json
 
-    - name: Install Appium and UiAutomator2
+    # ── 5. Install Appium + UiAutomator2 driver ───────────────────────────
+    - name: Install Appium and UiAutomator2 Driver
       run: |
-        npm install -g appium
+        npm install -g appium@latest
         appium driver install uiautomator2
+        appium driver list --installed
 
-    - name: Install Dependencies (Root, Client, and Functions)
+    # ── 6. Install project deps ───────────────────────────────────────────
+    - name: Install Project Dependencies
       run: |
         cd firstresponder
         npm install --loglevel=error --no-audit --no-fund
         cd client && npm install --loglevel=error --no-audit --no-fund
         cd ../functions && npm install --loglevel=error --no-audit --no-fund
 
+    # ── 7. Build the Vite client ──────────────────────────────────────────
     - name: Build Client for Testing
       env:
         VITE_FIREBASE_API_KEY: ci-demo-key
@@ -49,48 +73,98 @@ jobs:
         cd firstresponder/client
         npm run build
 
-    - name: Start Appium and Preview Server
+    # ── 8. Start Vite preview server ─────────────────────────────────────
+    - name: Start Vite Preview Server
       run: |
-        # Start Appium Server in the background
-        appium &
-        
-        # Start Vite preview server in the background
         cd firstresponder/client
         npx vite preview --port 5173 --host 0.0.0.0 &
-        SERVER_PID=$!
-        
-        # Wait for the preview server to be ready
+        echo "SERVER_PID=$!" >> $GITHUB_ENV
         echo "⏳ Waiting for preview server..."
         for i in $(seq 1 30); do
-          if curl -s http://127.0.0.1:5173 > /dev/null 2>&1; then
-            echo "✅ Server is ready!"
+          if curl -sf http://127.0.0.1:5173 > /dev/null 2>&1; then
+            echo "✅ Preview server is ready on :5173"
+            break
+          fi
+          echo "  Attempt $i/30 — retrying in 2s..."
+          sleep 2
+        done
+
+    # ── 9. Start Appium server ────────────────────────────────────────────
+    - name: Start Appium Server
+      run: |
+        appium --log appium.log --log-level info &
+        echo "APPIUM_PID=$!" >> $GITHUB_ENV
+        echo "⏳ Waiting for Appium server on :4723..."
+        for i in $(seq 1 20); do
+          if curl -sf http://127.0.0.1:4723/status > /dev/null 2>&1; then
+            echo "✅ Appium server is ready!"
             break
           fi
           sleep 2
         done
+        curl -s http://127.0.0.1:4723/status | python3 -m json.tool || true
 
+    # ── 10. Run Appium tests inside Android Emulator ──────────────────────
     - name: Run Appium Tests in Android Emulator
       uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: 29
-        target: default
-        arch: x86
-        profile: pixel_4
+        api-level: 31
+        target: google_apis
+        arch: x86_64
+        profile: pixel_5
+        ram-size: 4096M
+        heap-size: 512M
+        disable-animations: true
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         script: |
-          cd firstresponder
-          echo "### 📱 Appium Mobile Test Results" >> $GITHUB_STEP_SUMMARY
-          
-          # We use node to run the test and output to summary
-          node --test test/appium.*.test.js 2>&1 | tee appium-report.txt
-          
-          # Check if the test summary markdown exists and append it (if using a custom reporter)
-          if [ -f test-summary.md ]; then
-            cat test-summary.md >> $GITHUB_STEP_SUMMARY
+          echo "✅ Android Emulator is running"
+
+          # Wait for the emulator to be fully booted
+          echo "⏳ Waiting for emulator to be fully booted..."
+          adb wait-for-device
+          boot_completed=""
+          for i in $(seq 1 60); do
+            boot_completed=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            if [ "$boot_completed" = "1" ]; then
+              echo "✅ Emulator boot complete!"
+              break
+            fi
+            echo "  Boot attempt $i/60..."
+            sleep 3
+          done
+
+          if [ "$boot_completed" != "1" ]; then
+            echo "❌ Emulator failed to boot in time"
+            exit 1
           fi
 
-    - name: Upload Appium Test Report
+          # Check Chrome/WebView is available
+          echo "--- Installed packages (chrome-related) ---"
+          adb shell pm list packages | grep -i "chrome\|webview\|browser" || echo "No Chrome found — will use WebView"
+
+          # Run the Appium test suite
+          cd firstresponder
+          echo "### 📱 Appium Android Test Results" >> $GITHUB_STEP_SUMMARY
+
+          node --test \
+            --test-reporter=./test/pytest-reporter.js \
+            test/appium.*.test.js 2>&1 | tee appium-report.txt
+          TEST_EXIT=${PIPESTATUS[0]}
+
+          if [ -f test-summary.md ]; then cat test-summary.md >> $GITHUB_STEP_SUMMARY; fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Emulator:** Android API 31 (Google APIs) · x86_64 · Pixel 5" >> $GITHUB_STEP_SUMMARY
+
+          exit $TEST_EXIT
+
+    # ── 11. Upload Appium log and test report ─────────────────────────────
+    - name: Upload Appium Test Reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: appium-mobile-report
-        path: firstresponder/appium-report.txt
+        name: appium-android-report
+        path: |
+          firstresponder/appium-report.txt
+          appium.log
+        retention-days: 7
